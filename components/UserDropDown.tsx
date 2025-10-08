@@ -67,7 +67,9 @@ const UserDropDown = () => {
             localStorage.removeItem("token");
             localStorage.removeItem("email");
             localStorage.removeItem("userId");
-            // localStorage.removeItem("businessId");
+            localStorage.removeItem("roleId");
+            localStorage.removeItem("role");
+            localStorage.removeItem("name");
             router.replace("/auth/login");
           },
         },

@@ -151,15 +151,21 @@ export function MicrofinanceFormDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] md:max-w-xl">
-        <DialogHeader>
+      {/* CRITICAL CHANGE: Added classes for scrollability 
+        - max-h-[90vh]: Restricts the maximum height to 90% of the viewport height.
+        - overflow-y-auto: Enables vertical scrolling when the content exceeds the max height.
+        - flex flex-col: Ensures the header stays fixed and only the body scrolls.
+      */}
+      <DialogContent className="sm:max-w-[425px] md:max-w-xl max-h-[90vh] overflow-y-auto flex flex-col p-6">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {microfinance ? "Edit Microfinance" : "Add New Microfinance"}
           </DialogTitle>
         </DialogHeader>
+        {/* The form takes up the remaining height and handles its own content flow */}
         <form
           onSubmit={handleSubmit}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow overflow-y-visible"
         >
           <div className="grid gap-2">
             <Label htmlFor="name">Name</Label>
@@ -258,6 +264,7 @@ export function MicrofinanceFormDialog({
           <div className="grid gap-2 col-span-2">
             <Label htmlFor="description">Description (Optional)</Label>
             {/* Assuming you have a Textarea component or use the Input for multi-line */}
+            {/* NOTE: If you replace Input with Textarea, adjust its import and usage */}
             <Input
               id="description"
               value={description}
@@ -271,7 +278,8 @@ export function MicrofinanceFormDialog({
             <Input id="logo" type="file" accept="image/*" />
           </div>
 
-          <div className="flex justify-end gap-2 col-span-2 mt-4">
+          {/* Footer controls are outside the primary scrollable form grid for better UX */}
+          <div className="flex justify-end gap-2 col-span-2 mt-4 flex-shrink-0">
             <Button
               type="button"
               variant="outline"

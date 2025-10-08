@@ -31,8 +31,8 @@ export default function LoginPage() {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [email, setEmail] = useState("admin@gmail.com");
-  const [password, setPassword] = useState("adminpass");
+  const [email, setEmail] = useState("demiseyoel77@gmail.com");
+  const [password, setPassword] = useState("8408ed25-27e");
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -42,7 +42,7 @@ export default function LoginPage() {
     try {
       router.push("/");
       const response = await axios.post(
-        "http://127.0.0.1:9090/api/v1/auth/admin/signin",
+        "http://127.0.0.1:9090/api/v1/auth/microfinance/signin",
         {
           emailOrPhoneNumber: email,
           password,
@@ -52,8 +52,9 @@ export default function LoginPage() {
 
       localStorage.setItem("token", response.data.data.jwtResponse.token);
       localStorage.setItem("roleId", response.data.data.roleId);
-      localStorage.setItem("role", response.data.data.role);
       localStorage.setItem("userId", response.data.data.jwtResponse.id);
+      localStorage.setItem("name", response.data.data.jwtResponse.displayName);
+      localStorage.setItem("role", response.data.data.jwtResponse.role);
       localStorage.setItem(
         "userName",
         response.data.data.jwtResponse.displayName

@@ -44,7 +44,7 @@ export default function RolesPage() {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://127.0.0.1:9090/api/roles", {
+      const response = await axios.get("http://127.0.0.1:9090/api/v1/roles", {
         headers: {
           Authorization: `Bearer ${token}`, // Include the token here
         },
