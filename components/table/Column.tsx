@@ -35,7 +35,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import Image from "next/image";
 import Link from "next/link";
 import { TransactionDetailsDialog } from "@/app/dashboard/transactions/components/TransactionDetailsDialog";
-import { Subaccount, Microfinance, Compliance } from "@/lib/models";
+import { Subaccount, Microfinance, Compliance, Customer } from "@/lib/models";
 
 import { ComplianceDetailsDialog } from "@/components/ComplianceDetailsDialog";
 import { MicrofinanceFormDialog } from "../microfinance/MicrofinanceFormDialog";
@@ -46,6 +46,94 @@ import instance from "@/lib/axios";
 interface CommonColumnsProps {
   onSuccess: () => void;
 }
+
+export const CustomerColumns = ({
+  onSuccess,
+}: CommonColumnsProps): ColumnDef<Customer>[] => [
+  {
+    accessorKey: "name",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Name
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+  },
+  {
+    accessorKey: "clientId",
+    header: "Client ID",
+  },
+  {
+    accessorKey: "phoneNumber",
+    header: "Phone Number",
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+  },
+  {
+    accessorKey: "role.name",
+    header: "Role",
+    cell: ({ row }) => row.original.role?.name || "—",
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const customer = row.original;
+      const [isDeleting, setIsDeleting] = useState(false);
+
+      const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+          // Static data for now: just toast
+          toast.success(`Deleted customer ${customer.name}`);
+          onSuccess();
+        } catch (error) {
+          console.error("Failed to delete customer:", error);
+          toast.error("Failed to delete customer. Please try again.");
+        } finally {
+          setIsDeleting(false);
+        }
+      };
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="flex items-center gap-2"
+              onSelect={(e) => e.preventDefault()}
+            >
+              <Pencil className="h-4 w-4" />
+              <span>Edit</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="flex items-center gap-2 text-red-500"
+              onSelect={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Delete</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+  },
+];
 
 export const MicrofinanceColumns = ({
   onSuccess,

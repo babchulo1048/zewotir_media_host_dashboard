@@ -49,16 +49,31 @@ interface ApiPaymentMethod {
   value: number;
 }
 
-interface ApiDashboardData {
+// Admin Dashboard Data Interface
+interface ApiAdminDashboardData {
   totalSavingAmount: number;
   totalLoanAmount: number;
   paymentMethodDistribution: ApiPaymentMethod[];
   recentTransactions: ApiTransaction[];
-  totalMicrofinanceCount: number;
-  // **KEY CHANGE HERE:** Use the new key and interface type
+  totalMicrofinanceCount: number; // Admin-specific field
   monthlyRevenueData: ApiBarChartData;
   filteredTotalRevenue: number;
 }
+
+// Microfinance Dashboard Data Interface (Based on the provided payload)
+interface ApiMicrofinanceDashboardData {
+  totalSavingAmount: number;
+  totalLoanAmount: number;
+  paymentMethodDistribution: ApiPaymentMethod[];
+  recentTransactions: ApiTransaction[];
+  microfinanceName: string; // Microfinance-specific field
+  accountBalance: number; // Microfinance-specific field
+  monthlyRevenueData: ApiBarChartData;
+  filteredTotalRevenue: number;
+}
+
+// Union Type for flexibility in the fetch function
+type ApiDashboardData = ApiAdminDashboardData | ApiMicrofinanceDashboardData;
 
 // Interface for the transformed data used by the UI components
 interface UIMetric {
@@ -88,18 +103,15 @@ interface UIDashboardData {
 }
 
 // ====================================================================
-// 2. DATA MAPPING FUNCTIONS (No changes needed here)
+// 2. DATA MAPPING FUNCTIONS
+// **NOTE:** Logic is updated to handle both Admin and Microfinance data structures.
 // ====================================================================
 
-const mapApiMetricsToUI = (data: ApiDashboardData): UIMetric[] => {
-  return [
-    {
-      title: "Total Microfinance",
-      value: data.totalMicrofinanceCount.toLocaleString(),
-      icon: Users,
-      description: "Total Microfinance Institutions served",
-      changeType: "neutral",
-    },
+const mapApiMetricsToUI = (
+  data: ApiDashboardData,
+  role: string
+): UIMetric[] => {
+  const metrics: UIMetric[] = [
     {
       title: "Total Savings Amount",
       value: `ETB ${data.totalSavingAmount.toLocaleString()}`,
@@ -115,6 +127,28 @@ const mapApiMetricsToUI = (data: ApiDashboardData): UIMetric[] => {
       changeType: "negative", // Placeholder logic
     },
   ];
+
+  if (role === "ROLE_ADMIN" && "totalMicrofinanceCount" in data) {
+    // Admin-specific metric
+    metrics.unshift({
+      title: "Total Microfinance",
+      value: data.totalMicrofinanceCount.toLocaleString(),
+      icon: Users,
+      description: "Total Microfinance Institutions served",
+      changeType: "neutral",
+    });
+  } else if (role === "ROLE_MICROFINANCE" && "accountBalance" in data) {
+    // Microfinance-specific metric
+    metrics.unshift({
+      title: "Account Balance",
+      value: `ETB ${data.accountBalance.toLocaleString()}`,
+      icon: PiggyBank,
+      description: `Microfinance: ${data.microfinanceName}`,
+      changeType: "neutral",
+    });
+  }
+
+  return metrics;
 };
 
 const mapApiTransactionsToUITable = (
@@ -137,16 +171,23 @@ const mapApiTransactionsToUITable = (
 };
 
 // ====================================================================
-// 4. API FETCHING LOGIC
+// 4. API FETCHING LOGIC (CRITICAL CHANGES HERE)
 // ====================================================================
 
-const API_URL = "http://127.0.0.1:9090/api/v1/admin/dashboard";
+// Define base URLs for clarity
+const ADMIN_API_URL = "http://127.0.0.1:9090/api/v1/admin/dashboard";
+const MICROFINANCE_API_URL_BASE = "http://127.0.0.1:9090/api/v1/microfinances";
 
 export default function DashboardPage() {
   const [filter, setFilter] = useState("yearly");
   const [data, setData] = useState<UIDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Retrieve user data once on component mount
+  const role = localStorage.getItem("role");
+  const userId = localStorage.getItem("userId");
+  const isMicrofinanceUser = role === "ROLE_MICROFINANCE" && userId;
 
   // Function to determine the API filter body based on the UI filter
   const getFilterBody = useCallback(() => {
@@ -169,31 +210,40 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      // **DYNAMIC URL SELECTION LOGIC START**
+      let apiEndpoint = ADMIN_API_URL;
+
+      if (isMicrofinanceUser) {
+        apiEndpoint = `${MICROFINANCE_API_URL_BASE}/${userId}/dashboard`;
+      }
+      // **DYNAMIC URL SELECTION LOGIC END**
+
       setIsLoading(true);
       setError(null);
 
       const filterBody = getFilterBody();
 
       try {
-        const token = localStorage.getItem("token"); // **IMPORTANT: Replace with your actual token retrieval logic**
+        const token = localStorage.getItem("token");
 
-        // --- AXIOS IMPLEMENTATION START ---
-        const response = await axios.post<{ data: ApiDashboardData }>( // Use axios.post for the POST request
-          API_URL,
-          filterBody, // Axios automatically serializes the body
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        // Axios request expects a response with a structure { data: ApiDashboardData }
+        const response = await axios.post<{
+          data: ApiDashboardData;
+          message: string;
+          success: boolean;
+        }>(apiEndpoint, filterBody, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         const result = response.data;
 
         // Map API data to UI data structure
         const uiData: UIDashboardData = {
-          metrics: mapApiMetricsToUI(result.data),
+          // Pass the user role to the mapping function to select the correct metrics
+          metrics: mapApiMetricsToUI(result.data, role as string),
           // **KEY MAPPING CHANGE HERE:** Use 'monthlyRevenueData'
           monthlyRevenueData: result.data.monthlyRevenueData,
           paymentMethods: result.data.paymentMethodDistribution,
@@ -203,15 +253,13 @@ export default function DashboardPage() {
         };
 
         setData(uiData);
-        // --- AXIOS IMPLEMENTATION END ---
       } catch (e) {
         console.error("Fetch error:", e);
 
-        // Handle Axios specific error messages if needed
         let errorMessage =
           "Failed to fetch dashboard data. Check API and token.";
         if (axios.isAxiosError(e) && e.response) {
-          errorMessage = `Failed to fetch dashboard data. Status: ${e.response.status}`;
+          errorMessage = `Failed to fetch dashboard data. Status: ${e.response.status}. Endpoint: ${apiEndpoint}`;
         }
         setError(errorMessage);
       } finally {
@@ -219,10 +267,17 @@ export default function DashboardPage() {
       }
     };
 
-    fetchData();
-  }, [filter, getFilterBody]);
+    if (role && userId) {
+      fetchData();
+    } else {
+      setIsLoading(false);
+      setError(
+        "User role or ID is missing from local storage. Cannot fetch data."
+      );
+    }
+  }, [filter, getFilterBody, role, userId, isMicrofinanceUser]);
   // ====================================================================
-  // 5. MAIN DASHBOARD COMPONENT (Updated rendering logic)
+  // 5. MAIN DASHBOARD COMPONENT (No format changes)
   // ====================================================================
 
   const transactionColumns = useMemo(

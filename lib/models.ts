@@ -169,3 +169,18 @@ export interface Microfinance {
   // NOTE: The 'email' field used directly in your old model
   // and form is typically sourced from the nested 'user.email' in the entity.
 }
+
+export interface Customer {
+  id: number;
+  clientId: string;
+  name: string;
+  phoneNumber: string;
+  email: string;
+  password?: string; // optional in frontend, backend keeps it hidden
+  role?: {
+    id: number;
+    name: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
