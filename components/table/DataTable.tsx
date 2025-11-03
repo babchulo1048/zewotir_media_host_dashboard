@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import React from "react";
+import LoadingDialog from "../shared/LoadingDialog";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -37,6 +38,7 @@ interface DataTableProps<TData, TValue> {
     id: string;
     title: string;
   }[];
+  isLoading: boolean;
   extraActions?: React.ReactNode;
 }
 
@@ -44,6 +46,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   searchableColumns = [],
+  isLoading,
   extraActions,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -75,6 +78,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
+      <LoadingDialog open={isLoading} message="..." />
       <div className="flex items-center py-4">
         {searchableColumns.map((searchableColumn) => (
           <Input

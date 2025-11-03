@@ -23,7 +23,7 @@ import {
   User,
   Shield,
 } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface MenuGroup {
@@ -38,7 +38,13 @@ interface MenuGroup {
 
 const UserDropDown = () => {
   const router = useRouter();
-  const email = localStorage.getItem("email");
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only runs in the browser
+    const storedEmail = localStorage.getItem("email");
+    setEmail(storedEmail);
+  }, []);
 
   const menuGroups: MenuGroup[] = [
     // {
@@ -65,11 +71,9 @@ const UserDropDown = () => {
           icon: LogOut,
           onClick: () => {
             localStorage.removeItem("token");
-            localStorage.removeItem("email");
             localStorage.removeItem("userId");
-            localStorage.removeItem("roleId");
-            localStorage.removeItem("role");
-            localStorage.removeItem("name");
+            localStorage.removeItem("email");
+            localStorage.removeItem("userName");
             router.replace("/auth/login");
           },
         },

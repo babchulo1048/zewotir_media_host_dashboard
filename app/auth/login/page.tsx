@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import instance from "@/lib/axios";
+
 import OtpForm from "@/components/otp-form";
 import { toast } from "sonner";
 import {
@@ -31,8 +31,8 @@ export default function LoginPage() {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [email, setEmail] = useState("admin@gmail.com");
-  const [password, setPassword] = useState("adminpass");
+  const [email, setEmail] = useState("admin@portfolio.com");
+  const [password, setPassword] = useState("SecurePassword123");
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -42,22 +42,21 @@ export default function LoginPage() {
     try {
       router.push("/");
       const response = await axios.post(
-        "http://127.0.0.1:9090/api/v1/auth/admin/signin",
+        "https://zewotir-media-host-backend.onrender.com/api/v1/auth/login",
         {
-          emailOrPhoneNumber: email,
+          email: email,
           password,
         }
       );
-      console.log("first:", response.data.data);
+      console.log("first:", response.data);
 
-      localStorage.setItem("token", response.data.data.jwtResponse.token);
-      localStorage.setItem("roleId", response.data.data.roleId);
-      localStorage.setItem("role", response.data.data.role);
-      localStorage.setItem("userId", response.data.data.jwtResponse.id);
-      localStorage.setItem(
-        "userName",
-        response.data.data.jwtResponse.displayName
-      );
+      localStorage.setItem("token", response.data.token);
+      // localStorage.setItem("roleId", response.data.roleId);
+      // localStorage.setItem("role", response.data.role);
+      localStorage.setItem("userId", response.data.user.id);
+      localStorage.setItem("userName", response.data.user.username);
+      localStorage.setItem("email", response.data.user.email);
+
       // if (response.data.microfinanceName) {
       //   localStorage.setItem(
       //     "microfinanceName",

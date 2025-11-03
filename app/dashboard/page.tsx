@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Users, DollarSign, PiggyBank } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Layers,
+  BookOpen,
+  Mail,
+  LayoutDashboard as DashboardIcon,
+} from "lucide-react"; // Import new icons
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,417 +18,212 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link"; // Use Link for navigation
+// Assume StatCard is correctly implemented to use UIMetric
 import StatCard from "./_components/widget/StatCard";
-
-// New chart components
-import BarChartComponent from "./_components/widget/BarChartComponent";
-import ChartPieSimple from "./_components/widget/PieChartComponent";
-import axios from "axios";
+// No need for Tabs, BarChartComponent, ChartPieSimple, or axios for static view
 
 // ====================================================================
-// 1. NEW INTERFACES AND DATA TRANSFORMATION
+// 1. INTERFACES (REPEATED FOR CLARITY - Put these in a types file in production)
 // ====================================================================
 
-// Interface matching the keys from your Spring Boot API response's 'data' object
-interface ApiTransaction {
-  createdAt: string;
-  amount: number;
-  txRef: string;
-  id: string;
-  status: "SUCCESS" | "PENDING" | "FAILED"; // Match server enum
+interface ApiCountData {
+  totalActiveAssets: number;
+  totalPublishedArticles: number;
+  newInquiriesLast7Days: number;
 }
 
-// **UPDATED INTERFACE: Matches the new structure from the backend**
-interface ApiBarChartData {
-  labels: string[];
-  dataset: {
-    label: string;
-    data: number[];
-    color: string;
-    backgroundColor: string | null;
-  } | null;
-}
-
-interface ApiPaymentMethod {
-  name: string;
-  value: number;
-}
-
-// Admin Dashboard Data Interface
-interface ApiAdminDashboardData {
-  totalSavingAmount: number;
-  totalLoanAmount: number;
-  paymentMethodDistribution: ApiPaymentMethod[];
-  recentTransactions: ApiTransaction[];
-  totalMicrofinanceCount: number; // Admin-specific field
-  monthlyRevenueData: ApiBarChartData;
-  filteredTotalRevenue: number;
-}
-
-// Microfinance Dashboard Data Interface (Based on the provided payload)
-interface ApiMicrofinanceDashboardData {
-  totalSavingAmount: number;
-  totalLoanAmount: number;
-  paymentMethodDistribution: ApiPaymentMethod[];
-  recentTransactions: ApiTransaction[];
-  microfinanceName: string; // Microfinance-specific field
-  accountBalance: number; // Microfinance-specific field
-  monthlyRevenueData: ApiBarChartData;
-  filteredTotalRevenue: number;
-}
-
-// Union Type for flexibility in the fetch function
-type ApiDashboardData = ApiAdminDashboardData | ApiMicrofinanceDashboardData;
-
-// Interface for the transformed data used by the UI components
 interface UIMetric {
   title: string;
   value: string;
-  icon: React.ElementType;
+  icon: React.ElementType; // LucideIcon
   description: string;
-  changeType: "positive" | "negative" | "neutral";
+  url: string;
 }
 
-// Interface for the table (we simplify the API transaction)
-interface UITableTransaction {
-  id: string;
-  type: string; // "Saving" or "Loan" (derived from context/amount if needed)
-  amount: number;
-  member: string; // The API only gives us txRef/id, we'll use txRef as a placeholder for Member
+interface UIRecentActivity {
+  id: number;
+  title: string;
+  type: "Portfolio" | "Blog" | "Inquiry";
   date: string;
-  status: "Completed" | "Pending" | "Failed";
+  status: "Active" | "Draft" | "New";
 }
 
 interface UIDashboardData {
   metrics: UIMetric[];
-  // **KEY CHANGE HERE:** Use the new interface type
-  monthlyRevenueData: ApiBarChartData;
-  paymentMethods: ApiPaymentMethod[];
-  recentTransactions: UITableTransaction[];
+  recentActivity: UIRecentActivity[];
 }
 
 // ====================================================================
-// 2. DATA MAPPING FUNCTIONS
-// **NOTE:** Logic is updated to handle both Admin and Microfinance data structures.
+// 2. STATIC DATA DEFINITION (REPEATED FOR CLARITY)
 // ====================================================================
 
-const mapApiMetricsToUI = (
-  data: ApiDashboardData,
-  role: string
-): UIMetric[] => {
-  const metrics: UIMetric[] = [
+const STATIC_API_DATA: ApiCountData = {
+  totalActiveAssets: 42,
+  totalPublishedArticles: 18,
+  newInquiriesLast7Days: 5,
+};
+
+const STATIC_RECENT_ACTIVITY: UIRecentActivity[] = [
+  {
+    id: 9,
+    title: "New Client Inquiry: Booking for VO",
+    type: "Inquiry",
+    date: "2025-10-31",
+    status: "New",
+  },
+  {
+    id: 1,
+    title: "The Art of Voice-Over: Masterclass",
+    type: "Blog",
+    date: "2025-10-29",
+    status: "Active",
+  },
+  {
+    id: 5,
+    title: "Corporate Presentation Voice-Over",
+    type: "Portfolio",
+    date: "2025-10-28",
+    status: "Active",
+  },
+  {
+    id: 10,
+    title: "Draft Article: Media Production 101",
+    type: "Blog",
+    date: "2025-10-27",
+    status: "Draft",
+  },
+  {
+    id: 2,
+    title: "Charcoal Portrait Series (Art)",
+    type: "Portfolio",
+    date: "2025-10-25",
+    status: "Active",
+  },
+];
+
+const mapApiDataToUIData = (data: ApiCountData): UIMetric[] => {
+  return [
     {
-      title: "Total Savings Amount",
-      value: `ETB ${data.totalSavingAmount.toLocaleString()}`,
-      icon: PiggyBank,
-      description: `Total revenue: ETB ${data.filteredTotalRevenue.toLocaleString()}`,
-      changeType: "positive", // Placeholder logic
+      title: "Total Portfolio Assets",
+      value: data.totalActiveAssets.toLocaleString(),
+      icon: Layers,
+      description: "Media, Voice-Over, and Art currently active.",
+      url: "/admin/portfolio",
     },
     {
-      title: "Total Loan Amount",
-      value: `ETB ${data.totalLoanAmount.toLocaleString()}`,
-      icon: DollarSign,
-      description: "Amount for loans disbursed",
-      changeType: "negative", // Placeholder logic
+      title: "Total Published Articles",
+      value: data.totalPublishedArticles.toLocaleString(),
+      icon: BookOpen,
+      description: "Articles available on the public blog.",
+      url: "/admin/blog",
+    },
+    {
+      title: "New Inquiries (7 Days)",
+      value: data.newInquiriesLast7Days.toLocaleString(),
+      icon: Mail,
+      description: "New contacts requiring follow-up.",
+      url: "/admin/inquiries",
     },
   ];
-
-  if (role === "ROLE_ADMIN" && "totalMicrofinanceCount" in data) {
-    // Admin-specific metric
-    metrics.unshift({
-      title: "Total Microfinance",
-      value: data.totalMicrofinanceCount.toLocaleString(),
-      icon: Users,
-      description: "Total Microfinance Institutions served",
-      changeType: "neutral",
-    });
-  } else if (role === "ROLE_MICROFINANCE" && "accountBalance" in data) {
-    // Microfinance-specific metric
-    metrics.unshift({
-      title: "Account Balance",
-      value: `ETB ${data.accountBalance.toLocaleString()}`,
-      icon: PiggyBank,
-      description: `Microfinance: ${data.microfinanceName}`,
-      changeType: "neutral",
-    });
-  }
-
-  return metrics;
 };
 
-const mapApiTransactionsToUITable = (
-  transactions: ApiTransaction[]
-): UITableTransaction[] => {
-  // NOTE: The API doesn't provide 'type' or 'member', so we use placeholders/derivations.
-  return transactions.map((t) => ({
-    id: t.id.substring(0, 10) + "...", // Shorten ID for display
-    type: t.amount > 0 ? "SAVING" : "LOAN", // Placeholder: Assuming positive amount is SAVING, negative is LOAN
-    amount: Math.abs(t.amount),
-    member: t.txRef, // Using txRef as a placeholder for a member reference
-    date: new Date(t.createdAt).toLocaleDateString(),
-    status:
-      t.status === "SUCCESS"
-        ? "Completed"
-        : t.status === "PENDING"
-        ? "Pending"
-        : "Failed",
-  }));
+const STATIC_DASHBOARD_DATA: UIDashboardData = {
+  metrics: mapApiDataToUIData(STATIC_API_DATA),
+  recentActivity: STATIC_RECENT_ACTIVITY,
 };
 
 // ====================================================================
-// 4. API FETCHING LOGIC (CRITICAL CHANGES HERE)
+// 4. MAIN DASHBOARD COMPONENT (Stripped for Portfolio)
 // ====================================================================
-
-// Define base URLs for clarity
-const ADMIN_API_URL = "http://127.0.0.1:9090/api/v1/admin/dashboard";
-const MICROFINANCE_API_URL_BASE = "http://127.0.0.1:9090/api/v1/microfinances";
 
 export default function DashboardPage() {
-  const [filter, setFilter] = useState("yearly");
-  const [data, setData] = useState<UIDashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Retrieve user data once on component mount
-  const role = localStorage.getItem("role");
-  const userId = localStorage.getItem("userId");
-  const isMicrofinanceUser = role === "ROLE_MICROFINANCE" && userId;
-
-  // Function to determine the API filter body based on the UI filter
-  const getFilterBody = useCallback(() => {
-    // This is a simplified filter. For a real app, you'd calculate dates.
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1; // 1-indexed
-
-    let filterType = "YEARLY";
-    if (filter === "monthly") filterType = "MONTHLY";
-    else if (filter === "daily") filterType = "DAILY";
-
-    return {
-      filterType: filterType,
-      year: filterType === "YEARLY" ? year : undefined,
-      month: filterType === "MONTHLY" ? month : undefined,
-      // For daily/weekly, you'd calculate start/end date
-    };
-  }, [filter]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      // **DYNAMIC URL SELECTION LOGIC START**
-      let apiEndpoint = ADMIN_API_URL;
-
-      if (isMicrofinanceUser) {
-        apiEndpoint = `${MICROFINANCE_API_URL_BASE}/${userId}/dashboard`;
-      }
-      // **DYNAMIC URL SELECTION LOGIC END**
-
-      setIsLoading(true);
-      setError(null);
-
-      const filterBody = getFilterBody();
-
-      try {
-        const token = localStorage.getItem("token");
-
-        // Axios request expects a response with a structure { data: ApiDashboardData }
-        const response = await axios.post<{
-          data: ApiDashboardData;
-          message: string;
-          success: boolean;
-        }>(apiEndpoint, filterBody, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const result = response.data;
-
-        // Map API data to UI data structure
-        const uiData: UIDashboardData = {
-          // Pass the user role to the mapping function to select the correct metrics
-          metrics: mapApiMetricsToUI(result.data, role as string),
-          // **KEY MAPPING CHANGE HERE:** Use 'monthlyRevenueData'
-          monthlyRevenueData: result.data.monthlyRevenueData,
-          paymentMethods: result.data.paymentMethodDistribution,
-          recentTransactions: mapApiTransactionsToUITable(
-            result.data.recentTransactions
-          ),
-        };
-
-        setData(uiData);
-      } catch (e) {
-        console.error("Fetch error:", e);
-
-        let errorMessage =
-          "Failed to fetch dashboard data. Check API and token.";
-        if (axios.isAxiosError(e) && e.response) {
-          errorMessage = `Failed to fetch dashboard data. Status: ${e.response.status}. Endpoint: ${apiEndpoint}`;
-        }
-        setError(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (role && userId) {
-      fetchData();
-    } else {
-      setIsLoading(false);
-      setError(
-        "User role or ID is missing from local storage. Cannot fetch data."
-      );
-    }
-  }, [filter, getFilterBody, role, userId, isMicrofinanceUser]);
-  // ====================================================================
-  // 5. MAIN DASHBOARD COMPONENT (No format changes)
-  // ====================================================================
-
-  const transactionColumns = useMemo(
-    () => [
-      { header: "ID", accessorKey: "id" },
-      // NOTE: We use txRef for "Member" as a temporary proxy
-      { header: "Reference", accessorKey: "member" },
-      { header: "Type", accessorKey: "type" },
-      { header: "Amount", accessorKey: "amount" },
-      { header: "Date", accessorKey: "date" },
-      { header: "Status", accessorKey: "status" },
-    ],
-    []
+  // Use a state hook to hold the dashboard data, initially using static data
+  const [data, setData] = useState<UIDashboardData | null>(
+    STATIC_DASHBOARD_DATA
   );
+  const [isLoading, setIsLoading] = useState(false); // Set to false for static view
+
+  // NOTE: For the static view, we skip all useEffect/axios logic.
+  // When we implement the API, we will uncomment the useEffect hook here.
 
   if (isLoading || !data) {
     return (
       <div className="flex justify-center items-center p-6 min-h-[60vh] text-muted-foreground">
-        <p>{isLoading ? "Loading Dashboard Data..." : error}</p>
+        <p>{isLoading ? "Loading Dashboard Data..." : "Error loading data."}</p>
       </div>
     );
   }
 
-  // Destructure data. Note the change from 'monthlyVolume' to 'monthlyRevenueData'.
-  const { metrics, monthlyRevenueData, paymentMethods, recentTransactions } =
-    data;
+  const { metrics, recentActivity } = data;
+
+  const getStatusVariant = (status: UIRecentActivity["status"]) => {
+    switch (status) {
+      case "Active":
+        return "default";
+      case "Draft":
+        return "secondary";
+      case "New":
+        return "success" as any; // Assuming 'success' variant exists in your Badge
+      default:
+        return "outline";
+    }
+  };
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8">
-      {/* Filters */}
-      <Tabs defaultValue="yearly" value={filter} onValueChange={setFilter}>
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="daily">Daily</TabsTrigger>
-          <TabsTrigger value="weekly">Weekly</TabsTrigger>
-          <TabsTrigger value="monthly">Monthly</TabsTrigger>
-          <TabsTrigger value="yearly">Yearly</TabsTrigger>
-          <TabsTrigger value="custom" disabled>
-            Custom
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Welcome Header */}
+      <div className="flex items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Welcome, Mr Zick!</h1>
+      </div>
 
-      {/* Stat Cards (Total Microfinance, Total Savings, Total Loans) */}
+      {/* Stat Cards (Metrics) */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {metrics.map((stat) => (
-          <StatCard key={stat.title} stat={stat} />
+          // Link the whole card to the relevant page
+          <Link
+            href={stat.url}
+            key={stat.title}
+            className="hover:opacity-90 transition-opacity"
+          >
+            {/* StatCard needs to accept the UIMetric structure */}
+            <StatCard stat={stat} />
+          </Link>
         ))}
       </div>
 
-      {/* Charts (Monthly Volume Bar Chart & Payment Method Pie Chart) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-7">
-        {/* Monthly Volume using BarChartComponent (4/7 columns) */}
-        <div className="lg:col-span-4">
-          {/* **CRITICAL CHANGE:** Pass 'labels' and 'dataset' from 'monthlyRevenueData' directly to the BarChartComponent.
-           */}
-          <BarChartComponent
-            labels={monthlyRevenueData.labels}
-            dataset={monthlyRevenueData.dataset}
-          />
-        </div>
-
-        {/* Payment Method Distribution using ChartPieSimple (3/7 columns) */}
-        <div className="lg:col-span-3">
-          <ChartPieSimple
-            pieChartData={{
-              labels: paymentMethods.map((p) => p.name),
-              datasets: [
-                {
-                  label: "Payment Method Distribution",
-                  data: paymentMethods.map((p) => p.value),
-                  // NOTE: Colors are not provided by API, so assign them dynamically or use defaults
-                  backgroundColor: paymentMethods.map(
-                    (_, index) =>
-                      index === 0
-                        ? "hsl(142.1 70.6% 45.3%)" // Green for first
-                        : index === 1
-                        ? "hsl(217.2 91.2% 59.8%)" // Blue for second
-                        : `hsl(${(index * 50 + 10) % 360} 70% 50%)` // Dynamic HSL for others
-                  ),
-                },
-              ],
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Recent Transactions Table */}
+      {/* Recent Activity Table */}
       <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Recent Transactions ({filter} View)</CardTitle>
+            <CardTitle>Recent Activity & Updates</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {transactionColumns.map((col) => (
-                      <TableHead
-                        key={col.accessorKey}
-                        className="whitespace-nowrap"
-                      >
-                        {col.header}
-                      </TableHead>
-                    ))}
+                    <TableHead>Title</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell className="font-medium text-primary">
-                        {transaction.id}
+                  {recentActivity.map((activity) => (
+                    <TableRow key={activity.id}>
+                      <TableCell className="font-medium">
+                        {activity.title}
                       </TableCell>
-                      <TableCell>{transaction.member}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            transaction.type === "BORROWING"
-                              ? "default"
-                              : transaction.type === "SAVING"
-                              ? "secondary"
-                              : "outline"
-                          }
-                          className="whitespace-nowrap"
-                        >
-                          {transaction.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {/* Currency formatting */}
-                        {`ETB ${transaction.amount.toLocaleString()}`}
+                        <Badge variant="outline">{activity.type}</Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {transaction.date}
+                        {activity.date}
                       </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            transaction.status === "Completed"
-                              ? "success" // Assuming success variant exists
-                              : transaction.status === "Pending"
-                              ? "warning" // Assuming warning variant exists
-                              : "destructive"
-                          }
-                        >
-                          {transaction.status}
+                      <TableCell className="text-right">
+                        <Badge variant={getStatusVariant(activity.status)}>
+                          {activity.status}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -437,3 +237,20 @@ export default function DashboardPage() {
     </main>
   );
 }
+
+// NOTE: You must ensure your StatCard component uses the UIMetric interface correctly.
+// For example, StatCard might look like this:
+/*
+const StatCard = ({ stat }: { stat: UIMetric }) => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+      <stat.icon className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{stat.value}</div>
+      <p className="text-xs text-muted-foreground">{stat.description}</p>
+    </CardContent>
+  </Card>
+);
+*/
