@@ -37,31 +37,7 @@ export function TransactionDetailsDialog({
 
         <section className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
           <div>
-            <strong>Transaction Ref:</strong> <br /> {transaction.txRef}
-          </div>
-          <div>
-            <strong>CustomerId:</strong> <br />{" "}
-            {transaction.metadata.customerId}
-          </div>
-          <div>
-            <strong>Transaction Type:</strong> <br />{" "}
-            {transaction.transactionType}
-          </div>
-          <div>
-            <strong>Amount:</strong> <br /> {transaction.amount.toFixed(2)}
-          </div>
-          <div>
-            <strong>Payment Method:</strong> <br /> {transaction.paymentMethod}
-          </div>
-          <div>
-            <strong>Status:</strong> <br /> {transaction.status}
-          </div>
-          {/* <div>
-            <strong>Retry Count:</strong> <br /> {transaction.retry_count}
-          </div> */}
-          <div>
-            <strong>Created At:</strong> <br />{" "}
-            {new Date(transaction.createdAt).toLocaleString()}
+            <strong>Transaction Ref:</strong> <br /> {transaction.tx_ref}
           </div>
         </section>
 

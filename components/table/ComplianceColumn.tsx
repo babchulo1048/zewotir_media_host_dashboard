@@ -21,7 +21,7 @@ import instance from "@/lib/axios";
 import { StateFormDialog } from "@/components/compliance/StateFormDialog";
 import { SubCityFormDialog } from "@/components/compliance/SubCityFormDialog";
 import { CurrencyFormDialog } from "@/components/compliance/CurrencyFormDialog";
-
+import { SubCity } from "@/lib/models";
 interface CommonColumnsProps {
   onSuccess: () => void;
 }

@@ -46,7 +46,7 @@ const resumeColumns: (handlers: {
         {row.original.isPrimary && (
           <Star
             className="h-4 w-4 text-yellow-500 ml-2 inline-block"
-            title="Primary Resume"
+            // title="Primary Resume" // ❌ TS Error
           />
         )}
       </div>

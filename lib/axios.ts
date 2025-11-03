@@ -1,8 +1,14 @@
 // src/lib/api.ts (Updated with Authorization Token)
+import axios from "axios";
 
 // const API_BASE_URL = "http://localhost:3001/api/v1";
 const API_BASE_URL = "https://zewotir-media-host-backend.onrender.com";
 
+const instance = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+export default instance;
 /**
  * A simple utility to handle authenticated API requests.
  * It automatically retrieves the JWT from localStorage and attaches it to the Authorization header.

@@ -36,7 +36,11 @@ const CompliancePage = () => {
         <h1 className="text-2xl font-bold">Compliance</h1>
 
         <div className="rounded-lg p-4">
-          <DataTable columns={ComplianceColumns} data={complianceData} />
+          <DataTable
+            columns={ComplianceColumns}
+            data={complianceData}
+            isLoading={false}
+          />
         </div>
       </div>
 

@@ -31,8 +31,15 @@ const CustomerPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Retrieve user data once
-  const role = localStorage.getItem("role");
-  const userId = localStorage.getItem("userId");
+  const [role, setRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRole(localStorage.getItem("role"));
+    setUserId(localStorage.getItem("userId"));
+    setToken(localStorage.getItem("token"));
+  }, []);
 
   // Function to simulate refreshing or re-fetching customers (used after an action)
   const refreshCustomers = useCallback(() => {

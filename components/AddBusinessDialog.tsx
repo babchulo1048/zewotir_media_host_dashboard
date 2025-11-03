@@ -89,7 +89,7 @@ export function AddBusinessDialog({
   });
   const [loading, setLoading] = React.useState(false);
   const { businesses } = useBusinesses(merchantId);
-  useState<Business | null>(null);
+  useState<any>(null);
   const { setBusinessId, businessId } = useBusinessContext();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
@@ -106,7 +106,7 @@ export function AddBusinessDialog({
       formData.append("businessEmail", values.businessEmail);
       formData.append("businessPhoneNumber", values.businessPhoneNumber);
       formData.append("businessAddress", values.businessAddress);
-      formData.append("businessWebsite", values.businessWebsite);
+      // formData.append("businessWebsite", values.businessWebsite);
       formData.append("isChurch", "false");
       formData.append("isActive", values.isActive ? "1" : "0");
       formData.append("businessLogo", values.businessLogo);

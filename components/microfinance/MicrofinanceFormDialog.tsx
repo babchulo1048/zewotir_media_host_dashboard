@@ -32,7 +32,7 @@ export function MicrofinanceFormDialog({
 
   // 1. STATE VARIABLES FOR ALL FIELDS
   const [name, setName] = useState(microfinance?.name || "");
-  const [email, setEmail] = useState(microfinance?.email || "");
+  const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState(
     microfinance?.phoneNumber || ""
   );

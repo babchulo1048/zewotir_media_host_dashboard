@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AssetDeleteDialog } from "@/components/assets/AssetDeleteDialog";
 
-import { PortfolioAsset, AssetType } from "@/lib/models";
+import { PortfolioAsset, AssetType, PortfolioAssets } from "@/lib/models";
 
 // --- Import Placeholder Components (You will create these) ---
 import { AssetsDataTable } from "@/components/assets/AssetsDataTable";
@@ -59,12 +59,24 @@ export default function PortfolioPage() {
     async (assetType: LowercaseAssetType) => {
       setIsLoading(true);
       try {
-        // 🎯 FIX: Use the lowercase assetType in the URL
         const endpoint = `/portfolio/assets/${assetType}`;
-        const data = await apiFetch(endpoint);
+        const data: PortfolioAssets[] = await apiFetch(endpoint);
 
-        // The API returns only the assets for the requested type, so we simply replace the list
-        setAssets(data);
+        // Map snake_case backend to camelCase frontend model
+        const mappedAssets: PortfolioAsset[] = data.map((a) => ({
+          id: a.id,
+          title: a.title,
+          description: a.description,
+          assetType: a.asset_type,
+          url: a.link_url,
+          thumbnailUrl: a.thumbnail_url,
+          tags: a.tags,
+          isFeatured: a.is_featured,
+          isActive: a.is_active,
+          createdAt: a.created_at,
+        }));
+
+        setAssets(mappedAssets);
       } catch (error) {
         console.error("Failed to fetch portfolio assets:", error);
         toast({
@@ -90,29 +102,13 @@ export default function PortfolioPage() {
   // app/admin/portfolio/page.tsx (Updated useMemo)
 
   const filteredAssets = useMemo(() => {
-    // 1. Get the target value from the tab (e.g., 'media')
     const targetType = currentTab.toLowerCase();
 
-    console.log("assets:", assets); // Check this content in your console
-
-    // 2. Safely filter the current assets list
-    const result =
-      assets?.filter((asset) => {
-        // --- Safely check for assetType (camelCase) or asset_type (snake_case) ---
-
-        // Check for the value in the expected frontend key (camelCase)
-        const typeCamel = (asset?.assetType || "").toLowerCase();
-
-        // Check for the value in the potential backend key (snake_case)
-        // This is the MOST LIKELY source of the issue.
-        const typeSnake = (asset?.asset_type || "").toLowerCase();
-
-        // Return true if either property matches the target type
-        return typeCamel === targetType || typeSnake === targetType;
-      }) ?? [];
-
-    console.log("filteredAssets:", result);
-    return result;
+    return (
+      assets?.filter(
+        (asset) => (asset.assetType || "").toLowerCase() === targetType
+      ) ?? []
+    );
   }, [assets, currentTab]);
 
   // 2. Handler to open the dialog for creating a NEW asset

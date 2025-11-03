@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2Icon } from "lucide-react";
 import axios from "axios";
+import instance from "@/lib/axios";
 
 export default function LoginPage() {
   const [requires2FA, setRequires2FA] = useState(false);

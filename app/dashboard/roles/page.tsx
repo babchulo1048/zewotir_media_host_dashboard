@@ -163,7 +163,7 @@ export default function RolesPage() {
       <PermissionDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        role={selectedRole}
+        role={selectedRole as any}
         onSaveSuccess={handleSaveSuccess}
       />
     </div>

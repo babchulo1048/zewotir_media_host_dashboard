@@ -188,7 +188,7 @@ export interface Customer {
 // src/types/portfolio.ts (New file for clarity)
 
 // Define the Asset Type Enum (Matching your DB 'type' column)
-export type AssetType = "MEDIA" | "ART" | "VOICEOVER";
+export type AssetType = "media" | "art" | "voiceover";
 
 // Interface for a single Portfolio Asset (matching the shape returned by API)
 export interface PortfolioAsset {
@@ -202,6 +202,19 @@ export interface PortfolioAsset {
   isFeatured: boolean;
   isActive: boolean;
   createdAt: string; // ISO date string
+}
+
+export interface PortfolioAssets {
+  id: string; // UUID from DB
+  title: string;
+  description: string;
+  asset_type: AssetType; // 'MEDIA', 'ART', 'VOICEOVER'
+  link_url: string; // Main file URL (Cloudinary)
+  thumbnail_url: string; // Thumbnail/Preview URL (Cloudinary)
+  tags: string[]; // List of keywords/tags
+  is_featured: boolean;
+  is_active: boolean;
+  created_at: string; // ISO date string
 }
 
 // src/types/blog.ts (New file for blog types)

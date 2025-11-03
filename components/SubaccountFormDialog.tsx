@@ -43,6 +43,7 @@ interface SubaccountFormDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   subaccount?: Subaccount;
+  merchantId?: string | null;
 }
 
 const SubaccountFormDialog = ({
@@ -50,6 +51,7 @@ const SubaccountFormDialog = ({
   onOpenChange,
   onSuccess,
   subaccount,
+  merchantId,
 }: SubaccountFormDialogProps) => {
   const isEditing = !!subaccount;
   const { businessId } = useBusinessContext();

@@ -53,16 +53,14 @@ export const AssetFormDialog: React.FC<AssetFormDialogProps> = ({
 
   // --- Initial Form State Setup ---
   // 🌟 ALLICHASQA: Duplicate key warning-kunata allichasqa huk kutillapi willañiqikunata churaspa.
-  const baseAsset = assetToEdit || {};
+  const baseAsset: Partial<PortfolioAsset> = assetToEdit || {};
 
   const defaultAsset: Partial<PortfolioAsset> = {
     title: baseAsset.title || "",
     description: baseAsset.description || "",
-    // Calculate final URL/thumbnail, prioritizing snake_case API fields if available
     url: (baseAsset as any)?.link_url || baseAsset.url || "",
     thumbnailUrl:
       (baseAsset as any)?.thumbnail_url || baseAsset.thumbnailUrl || "",
-    // Calculate final AssetType, ensuring lowercase, defaulting to 'media'
     assetType: (
       (baseAsset.assetType as string) || "media"
     ).toLowerCase() as AssetType,

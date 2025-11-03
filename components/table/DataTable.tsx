@@ -38,7 +38,7 @@ interface DataTableProps<TData, TValue> {
     id: string;
     title: string;
   }[];
-  isLoading: boolean;
+  isLoading?: boolean;
   extraActions?: React.ReactNode;
 }
 
@@ -46,7 +46,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   searchableColumns = [],
-  isLoading,
+  isLoading = false,
   extraActions,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);

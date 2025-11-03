@@ -147,7 +147,7 @@ export default function PermissionDialog({
                     <h4 className="text-base font-semibold text-foreground mb-3">
                       {category}
                     </h4>
-                    <div className="flex items-center space-x-2 mb-4">
+                    {/* <div className="flex items-center space-x-2 mb-4">
                       <Checkbox
                         id={`group-all-${category}`}
                         checked={allGroupChecked}
@@ -162,7 +162,7 @@ export default function PermissionDialog({
                       >
                         All
                       </Label>
-                    </div>
+                    </div> */}
                     <div className="space-y-3">
                       {permissions.map((perm) => (
                         <div

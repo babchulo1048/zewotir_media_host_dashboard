@@ -5,9 +5,9 @@ import React from "react";
 interface StatCard {
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon: LucideIcon | React.ElementType; // 👈 allow any React component
   value: string;
-  percentageChange: string;
+  percentageChange?: number;
 }
 
 interface Props {
