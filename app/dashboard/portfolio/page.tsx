@@ -217,7 +217,7 @@ export default function PortfolioPage() {
                 {/* Render the DataTable with the filtered data */}
                 <AssetsDataTable
                   data={filteredAssets}
-                  assetType={currentTab}
+                  assetType={currentTab as AssetType}
                   onEdit={handleEdit}
                   onView={handleView}
                   isLoading={isLoading} // Pass loading state to table

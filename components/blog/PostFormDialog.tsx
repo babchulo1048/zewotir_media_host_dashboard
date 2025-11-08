@@ -26,7 +26,9 @@ import {
 import { Loader2 } from "lucide-react"; // 👈 Import Loader2
 
 // Define the API endpoint
-const API_URL = "http://localhost:3001/api/v1/blog/articles";
+// const API_URL = "http://localhost:3001/api/v1/blog/articles";
+const API_URL =
+  "https://zewotir-media-host-backend.onrender.com/api/v1/blog/articles";
 
 interface PostFormDialogProps {
   open: boolean;
@@ -252,7 +254,7 @@ export const PostFormDialog: React.FC<PostFormDialogProps> = ({
           >
             Cancel
           </Button>
-          <Button type="submit" onClick={handleSubmit} disabled={isLoading}>
+          <Button type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {buttonText}
           </Button>

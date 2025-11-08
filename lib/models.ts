@@ -188,7 +188,7 @@ export interface Customer {
 // src/types/portfolio.ts (New file for clarity)
 
 // Define the Asset Type Enum (Matching your DB 'type' column)
-export type AssetType = "media" | "art" | "voiceover";
+export type AssetType = "tvhost" | "mcing" | "interviews" | "voiceover" | "art";
 
 // Interface for a single Portfolio Asset (matching the shape returned by API)
 export interface PortfolioAsset {
