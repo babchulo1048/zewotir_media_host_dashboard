@@ -2,7 +2,7 @@
 
 "use client";
 
-import { BlogPost } from "@/lib/models";
+import { BlogPost } from "@/lib/models"; // Assuming 'BlogPost' is now 'any' or updated
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 interface PostViewDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  post?: BlogPost; // The post to display
+  post?: any; // 👈 Update to 'any' or the new model structure
 }
 
 export const PostViewDialog: React.FC<PostViewDialogProps> = ({
@@ -28,13 +28,24 @@ export const PostViewDialog: React.FC<PostViewDialogProps> = ({
   // Guard clause: if no post is provided, don't show the content
   if (!post) return null;
 
-  // Helper to format the publish date
+  // --- MAPPING NEW API FIELDS ---
+  const imageUrl = post.featured_image_url;
+  const summary = post.excerpt;
+  const createdAt = post.created_at;
+  const postId = post.id;
+
+  // These fields are likely missing and we'll use sensible defaults/fallbacks
+  const status = post.status || "UNKNOWN";
   const publishedDate = post.publishedAt
     ? new Date(post.publishedAt).toLocaleDateString()
-    : "Not Published Yet";
+    : "Not Available";
+  const tags = post.tags || [];
+  const content =
+    post.content ||
+    "Content preview not available in the current API response.";
 
-  // Helper function for status badge color
-  const getStatusBadge = (status: BlogPost["status"]) => {
+  // Helper function for status badge color (Keeping old logic for display, defaulting UNKNOWN)
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "PUBLISHED":
         return (
@@ -44,8 +55,9 @@ export const PostViewDialog: React.FC<PostViewDialogProps> = ({
         return <Badge variant="secondary">DRAFT</Badge>;
       case "ARCHIVED":
         return <Badge variant="destructive">ARCHIVED</Badge>;
+      case "UNKNOWN":
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">UNKNOWN/DEFAULT</Badge>;
     }
   };
 
@@ -66,25 +78,41 @@ export const PostViewDialog: React.FC<PostViewDialogProps> = ({
               Featured Image
             </h3>
             <div className="w-full h-48 relative rounded-lg border overflow-hidden bg-muted">
-              {/* Image Placeholder */}
-              <img
-                src={post.imageUrl}
-                alt={post.title}
-                className="w-full h-full object-cover"
-              />
+              {/* Check if image URL exists before rendering */}
+              {imageUrl ? (
+                <img
+                  src={imageUrl} // 👈 Use featured_image_url
+                  alt={post.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  No Featured Image
+                </div>
+              )}
             </div>
 
             <h3 className="text-lg font-semibold border-b pb-1">
               Post Details
             </h3>
 
+            {/* Display Category */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-muted-foreground">
+                Category
+              </Label>
+              <Badge variant="default">{post.category}</Badge>
+            </div>
+
+            {/* Display Status (Using fallback) */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-muted-foreground">
                 Status
               </Label>
-              {getStatusBadge(post.status)}
+              {getStatusBadge(status)}
             </div>
 
+            {/* Published Date (Using fallback) */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-muted-foreground">
                 Published Date
@@ -92,27 +120,37 @@ export const PostViewDialog: React.FC<PostViewDialogProps> = ({
               <p className="font-medium">{publishedDate}</p>
             </div>
 
+            {/* Tags (Using fallback) */}
             <div className="space-y-2">
               <Label className="text-sm font-medium text-muted-foreground">
                 Tags
               </Label>
               <div className="flex flex-wrap gap-1">
-                {post.tags.map((tag) => (
-                  <Badge key={tag} variant="outline" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
+                {tags.length > 0 ? (
+                  tags.map(
+                    (
+                      tag: string // Cast tag to string
+                    ) => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    )
+                  )
+                ) : (
+                  <span className="text-muted-foreground italic text-sm">
+                    No tags
+                  </span>
+                )}
               </div>
             </div>
 
             <Separator />
 
             <div className="space-y-2 text-xs text-muted-foreground">
-              <p>
-                Created At: **{new Date(post.createdAt).toLocaleDateString()}**
-              </p>
-              <p className="truncate">Author ID: {post.authorId}</p>
-              <p className="truncate">Post ID: {post.id}</p>
+              {/* Use created_at field */}
+              <p>Created At: **{new Date(createdAt).toLocaleDateString()}**</p>
+              {/* Author ID is missing */}
+              <p className="truncate">Post ID: {postId}</p>
             </div>
           </div>
 
@@ -120,22 +158,20 @@ export const PostViewDialog: React.FC<PostViewDialogProps> = ({
           <div className="md:col-span-3 space-y-4 border-l pl-6">
             <h2 className="text-xl font-bold">{post.title}</h2>
 
+            {/* Use excerpt field */}
             <div className="text-sm text-muted-foreground italic border-l-4 border-primary/50 pl-3">
-              {post.summary}
+              {summary}
             </div>
 
             <Separator />
 
             <div className="text-base leading-relaxed whitespace-pre-wrap">
-              {/* NOTE: In a real application, the content field would be rendered 
-                using a Markdown parser or a Rich Text viewer here.
-                For static data, we show the raw content.
-                */}
               <Label className="text-sm font-medium text-muted-foreground block mb-2">
                 Full Content Preview (Raw)
               </Label>
+              {/* Use content field (with fallback) */}
               <p className="border p-4 rounded-md bg-secondary/10 text-sm font-mono max-h-96 overflow-y-auto">
-                {post.content}
+                {content}
               </p>
             </div>
           </div>

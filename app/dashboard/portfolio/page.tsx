@@ -18,20 +18,27 @@ import { AssetViewDialog } from "@/components/assets/AssetViewDialog";
 import { apiFetch } from "@/lib/axios"; // Assuming apiFetch is imported from here
 import { useToast } from "@/components/ui/use-toast";
 
-// Define the valid lowercase types that match your DB/Backend for the Tabs
-type LowercaseAssetType = "media" | "voiceover" | "art";
+// --- 🎯 UPDATED: Define the 5 valid lowercase types ---
+type LowercaseAssetType =
+  | "tvhost"
+  | "mcing"
+  | "interviews"
+  | "voiceover"
+  | "art";
 
-// Map for UI Display vs. Backend Value
+// --- 🎯 UPDATED: Map for UI Display vs. Backend Value (5 Tabs) ---
 const ASSET_TYPE_MAP: { name: string; type: LowercaseAssetType }[] = [
-  { name: "Media Production", type: "media" },
-  { name: "Art/Design", type: "art" },
+  { name: "TV Host", type: "tvhost" },
+  { name: "MC & Events", type: "mcing" },
+  { name: "Strategic Interviews", type: "interviews" },
   { name: "Voice-Overs", type: "voiceover" },
+  { name: "Art/Design", type: "art" },
 ];
 
 export default function PortfolioPage() {
   const { toast } = useToast();
-  // Initialize with a lowercase asset type matching the DB
-  const [currentTab, setCurrentTab] = useState<LowercaseAssetType>("media");
+  // --- UPDATED: Initial state set to the first new asset type ---
+  const [currentTab, setCurrentTab] = useState<LowercaseAssetType>("tvhost");
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<PortfolioAsset | undefined>(
@@ -53,12 +60,12 @@ export default function PortfolioPage() {
   const [assets, setAssets] = useState<PortfolioAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🌟 CORE FUNCTION: Fetch data from the API
-  // We now fetch only the assets for the currently selected type
+  // 🌟 CORE FUNCTION: Fetch data from the API (No logic change needed here)
   const fetchAssets = useCallback(
     async (assetType: LowercaseAssetType) => {
       setIsLoading(true);
       try {
+        // This endpoint now correctly fetches data for any of the 5 types
         const endpoint = `/portfolio/assets/${assetType}`;
         const data: PortfolioAssets[] = await apiFetch(endpoint);
 
@@ -97,10 +104,7 @@ export default function PortfolioPage() {
     fetchAssets(currentTab);
   }, [currentTab, fetchAssets]); // Re-fetch whenever the currentTab changes
 
-  // 1. Filter data based on the selected tab (Now this is just a quick check, as the API already filtered it)
-  // We keep this filter just in case the API returns slightly mixed data or for consistency.
-  // app/admin/portfolio/page.tsx (Updated useMemo)
-
+  // 1. Filter data based on the selected tab (The name of this is slightly misleading now, as the API already filtered it)
   const filteredAssets = useMemo(() => {
     const targetType = currentTab.toLowerCase();
 
@@ -135,7 +139,7 @@ export default function PortfolioPage() {
     setIsViewDialogOpen(true); // Open the view modal
   };
 
-  // 🌟 NEW: Callback function to run after a successful form submission (Create/Update)
+  // 🌟 NEW: Callback function to run after a successful form submission (Create/Update/Delete)
   const handleFormSuccess = () => {
     setIsDialogOpen(false); // Close the dialog
     setEditingAsset(undefined);
@@ -184,16 +188,17 @@ export default function PortfolioPage() {
         onSuccess={handleFormSuccess}
       />
 
-      {/* Tabs for Filtering */}
+      {/* Tabs for Filtering (UPDATED) */}
       <Tabs
         defaultValue={currentTab}
         onValueChange={(value) => setCurrentTab(value as LowercaseAssetType)}
       >
+        {/* 5 Tabs List */}
         <TabsList className="w-full justify-start overflow-x-auto">
           {ASSET_TYPE_MAP.map((tab) => (
             <TabsTrigger
               key={tab.type}
-              value={tab.type} // 🎯 Uses lowercase value ('media', 'art', etc.)
+              value={tab.type} // 🎯 Uses the specific lowercase type ('tvhost', 'art', etc.)
               className="min-w-[150px]"
             >
               {tab.name}
@@ -212,7 +217,7 @@ export default function PortfolioPage() {
                 {/* Render the DataTable with the filtered data */}
                 <AssetsDataTable
                   data={filteredAssets}
-                  assetType={currentTab}
+                  assetType={currentTab as AssetType}
                   onEdit={handleEdit}
                   onView={handleView}
                   isLoading={isLoading} // Pass loading state to table

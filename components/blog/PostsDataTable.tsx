@@ -8,31 +8,21 @@ import { ArrowUpDown, Edit, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PostsDataTableProps {
-  data: BlogPost[];
-  onEdit: (post: BlogPost) => void;
-  onView: (post: BlogPost) => void;
+  // NOTE: You might need to update your BlogPost model to reflect the new structure,
+  // but we'll use property accessors here based on the data provided.
+  data: any[]; // Using 'any' temporarily if BlogPost model isn't updated, or update BlogPost
+  onEdit: (post: any) => void;
+  onView: (post: any) => void;
 }
 
-const getStatusBadge = (status: BlogPost["status"]) => {
-  switch (status) {
-    case "PUBLISHED":
-      return (
-        <Badge className="bg-green-500 hover:bg-green-600">PUBLISHED</Badge>
-      );
-    case "DRAFT":
-      return <Badge variant="secondary">DRAFT</Badge>;
-    case "ARCHIVED":
-      return <Badge variant="destructive">ARCHIVED</Badge>;
-    default:
-      return <Badge variant="outline">Unknown</Badge>;
-  }
-};
+// NOTE: Since 'status' is not in the API payload, we remove getStatusBadge unless we default it.
 
 // Define the specific columns for Blog Posts
 const postColumns: (handlers: {
-  onEdit: (post: BlogPost) => void;
-  onView: (post: BlogPost) => void;
-}) => ColumnDef<BlogPost>[] = ({ onEdit, onView }) => [
+  onEdit: (post: any) => void; // Update type to 'any' or new model
+  onView: (post: any) => void; // Update type to 'any' or new model
+}) => ColumnDef<any>[] = ({ onEdit, onView }) => [
+  // Update ColumnDef type
   {
     accessorKey: "title",
     header: ({ column }) => (
@@ -51,29 +41,37 @@ const postColumns: (handlers: {
     ),
   },
   {
-    accessorKey: "summary",
-    header: "Summary",
+    // RENAME: Change accessorKey from "summary" to "excerpt"
+    accessorKey: "excerpt",
+    header: "Summary/Excerpt",
     cell: ({ row }) => (
       <div className="text-sm text-muted-foreground max-w-[350px] truncate">
-        {row.getValue("summary")}
+        {row.getValue("excerpt")}
       </div>
     ),
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => getStatusBadge(row.getValue("status")),
+    // NEW COLUMN: Add category
+    accessorKey: "category",
+    header: "Category",
+    cell: ({ row }) => (
+      <Badge variant="outline">{row.getValue("category")}</Badge>
+    ),
   },
   {
-    accessorKey: "publishedAt",
-    header: "Published On",
+    // CHANGE: Use "created_at" since "publishedAt" is not available
+    accessorKey: "created_at",
+    header: "Created On",
     cell: ({ row }) => {
-      const date = row.getValue("publishedAt") as string | null;
+      const date = row.getValue("created_at") as string | null;
       if (!date)
         return <span className="text-muted-foreground italic">N/A</span>;
+      // Use toLocaleDateString for a cleaner display
       return new Date(date).toLocaleDateString();
     },
   },
+  // REMOVE: The 'status' column is removed as the field is not present in the API payload
+
   {
     id: "actions",
     header: "Actions",
@@ -101,6 +99,7 @@ const postColumns: (handlers: {
 ];
 
 export function PostsDataTable({ data, onEdit, onView }: PostsDataTableProps) {
+  // Ensure the PostColumns function uses the updated 'any' type if the model hasn't been changed.
   const columns = postColumns({ onEdit, onView });
 
   return (

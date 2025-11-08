@@ -61,8 +61,9 @@ export const AssetFormDialog: React.FC<AssetFormDialogProps> = ({
     url: (baseAsset as any)?.link_url || baseAsset.url || "",
     thumbnailUrl:
       (baseAsset as any)?.thumbnail_url || baseAsset.thumbnailUrl || "",
+    // Changed default from "media" to "tvhost" as it is a new primary media type
     assetType: (
-      (baseAsset.assetType as string) || "media"
+      (baseAsset.assetType as string) || "tvhost"
     ).toLowerCase() as AssetType,
     isFeatured: baseAsset.isFeatured || false,
     isActive: baseAsset.isActive || true,
@@ -82,26 +83,33 @@ export const AssetFormDialog: React.FC<AssetFormDialogProps> = ({
     if (assetToEdit) {
       // Ensure we set the state with the lowercase value
       setSelectedAssetType(
-        (assetToEdit.assetType || "media").toLowerCase() as AssetType
+        (assetToEdit.assetType || "tvhost").toLowerCase() as AssetType
       );
       setIsFeatured(assetToEdit.isFeatured || false);
       setIsActive(assetToEdit.isActive || true);
     } else {
       // Use the correct lowercase default
-      setSelectedAssetType("media" as AssetType);
+      setSelectedAssetType("tvhost" as AssetType);
       setIsFeatured(false);
       setIsActive(true);
     }
   }, [assetToEdit, open]);
 
-  // Conditional flags for rendering (Checking against the correct lowercase values)
-  const isMainLinkMode =
-    selectedAssetType === "media" || selectedAssetType === "art";
-  const isMainFileMode = selectedAssetType === "voiceover";
-  const voiceoverAccept = "audio/*, .mp3, .wav";
+  // --- UPDATED CONDITIONAL FLAGS ---
+  const linkBasedTypes: AssetType[] = ["tvhost", "mcing", "interviews", "art"];
+  const fileBasedTypes: AssetType[] = ["voiceover"];
+  const urlInputVisibleTypes: AssetType[] = ["tvhost", "mcing", "interviews"];
 
-  // 🌟 NEW: Flag to control when the input is actually visible (only for 'media', not 'art')
-  const isMainLinkInputVisible = selectedAssetType === "media";
+  // Flag for all types that use the 'link_url' column (Link URL input or dummy value)
+  const isLinkBased = linkBasedTypes.includes(selectedAssetType);
+
+  // Flag for Voiceover (uses file upload input)
+  const isMainFileMode = fileBasedTypes.includes(selectedAssetType);
+
+  // Flag to control when the URL input is actually visible (Hiding for 'art' and 'voiceover')
+  const isLinkInputVisible = urlInputVisibleTypes.includes(selectedAssetType);
+
+  const voiceoverAccept = "audio/*, .mp3, .wav";
 
   // 🌟 CORE FUNCTION: Handles form data extraction and API call
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -141,20 +149,20 @@ export const AssetFormDialog: React.FC<AssetFormDialogProps> = ({
     }
 
     // --- 3. Handle Main Content based on Asset Type ---
-    if (isMainLinkMode) {
-      // MEDIA/ART: Main content is a URL input (or dummy value for ART)
+    // UPDATED: Using the new 'isLinkBased' flag
+    if (isLinkBased) {
+      // TVHOST, MCING, INTERVIEWS, ART: Main content is a URL input (or dummy value for ART)
 
       let linkUrl = formData.get("link_url") as string;
 
-      // *** START: FIX for ART Hiding ***
+      // *** START: Logic for ART Hiding ***
       if (selectedAssetType === "art") {
-        // The input is hidden for ART, but the field is mandatory for the backend.
         // We inject a dummy URL to satisfy the form submission and backend validation.
         linkUrl = "https://placeholder-url.com/art-link";
       }
-      // *** END: FIX for ART Hiding ***
+      // *** END: Logic for ART Hiding ***
 
-      // This validation check now only truly applies to 'media' type.
+      // This validation check now only truly applies to the link input types.
       if (!linkUrl) {
         setIsLoading(false); // Stop loading before toast
         return toast({
@@ -267,7 +275,7 @@ export const AssetFormDialog: React.FC<AssetFormDialogProps> = ({
               />
             </div>
 
-            {/* --- Asset Type Selector --- */}
+            {/* --- Asset Type Selector (UPDATED) --- */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="assetType" className="col-span-4 md:col-span-1">
                 Asset Type
@@ -280,22 +288,27 @@ export const AssetFormDialog: React.FC<AssetFormDialogProps> = ({
                   <SelectValue placeholder="Select Asset Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="media">
-                    Media Production (Video/Animation)
+                  {/* NEW 5 ASSET TYPES */}
+                  <SelectItem value="tvhost">TV Host (Video Clips)</SelectItem>
+                  <SelectItem value="mcing">
+                    MC & Events (Video/Photos)
                   </SelectItem>
-                  <SelectItem value="art">
-                    Art/Design (Illustrations/Graphics)
+                  <SelectItem value="interviews">
+                    Strategic Interviews (Video)
                   </SelectItem>
                   <SelectItem value="voiceover">
                     Voice-Overs (Audio Clips)
+                  </SelectItem>
+                  <SelectItem value="art">
+                    Art/Design (Illustrations/Graphics)
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* --- Conditional Main Content Input --- */}
-            {/* HIDE: Input is now only visible if selectedAssetType === "media" */}
-            {isMainLinkInputVisible && (
+            {/* UPDATED: isLinkInputVisible now controls this */}
+            {isLinkInputVisible && (
               <div className="grid grid-cols-4 items-center gap-4 border-t pt-4">
                 <Label htmlFor="link_url" className="col-span-4 md:col-span-1">
                   Main Content URL
@@ -346,7 +359,7 @@ export const AssetFormDialog: React.FC<AssetFormDialogProps> = ({
             {/* --- Thumbnail File Upload (Always present) --- */}
             <div
               className={`grid grid-cols-4 items-center gap-4 ${
-                isMainLinkMode || isMainFileMode ? "border-t pt-4" : ""
+                isLinkBased || isMainFileMode ? "border-t pt-4" : ""
               }`}
             >
               <Label htmlFor="thumbnail" className="col-span-4 md:col-span-1">
