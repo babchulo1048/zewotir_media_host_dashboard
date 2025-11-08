@@ -27,8 +27,11 @@ import { Mail, Phone, Clock, User } from "lucide-react";
 interface InquiryViewDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  inquiry?: ContactInquiry;
-  onUpdateStatus: (inquiryId: string, newStatus: InquiryStatus) => void;
+  inquiry?: any; // 👈 Updated to 'any'
+  onUpdateStatus: (
+    inquiryId: string | number,
+    newStatus: InquiryStatus
+  ) => void; // Allow string or number ID
 }
 
 export const InquiryViewDialog: React.FC<InquiryViewDialogProps> = ({
@@ -37,27 +40,32 @@ export const InquiryViewDialog: React.FC<InquiryViewDialogProps> = ({
   inquiry,
   onUpdateStatus,
 }) => {
-  const [currentStatus, setCurrentStatus] = useState<InquiryStatus | undefined>(
-    inquiry?.status
-  );
+  // Use a fallback status, assuming NEW if not provided by the API (or initial state)
+  const initialStatus = (inquiry?.status as InquiryStatus) || "NEW";
+  const [currentStatus, setCurrentStatus] =
+    useState<InquiryStatus>(initialStatus);
 
   // Sync internal state when the dialog opens or the inquiry changes
   useEffect(() => {
     if (inquiry) {
-      setCurrentStatus(inquiry.status);
+      setCurrentStatus((inquiry.status as InquiryStatus) || "NEW");
     }
   }, [inquiry, open]);
 
   if (!inquiry) return null;
+
+  // --- MAPPING NEW API FIELDS ---
+  const inquiryType = inquiry.inquiry_type; // Replaces subject
+  const receivedAt = inquiry.created_at; // Replaces receivedAt
 
   const handleStatusChange = (newStatus: string) => {
     setCurrentStatus(newStatus as InquiryStatus);
   };
 
   const handleSaveStatus = () => {
-    if (inquiry.id && currentStatus && currentStatus !== inquiry.status) {
+    // We compare to the initial status (which is defaulted to NEW if API doesn't send one)
+    if (inquiry.id && currentStatus && currentStatus !== initialStatus) {
       onUpdateStatus(inquiry.id, currentStatus);
-      // Close dialog after action (or handle API response)
       setOpen(false);
     }
   };
@@ -66,7 +74,8 @@ export const InquiryViewDialog: React.FC<InquiryViewDialogProps> = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-xl md:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Full Inquiry: **{inquiry.subject}**</DialogTitle>
+          {/* Use inquiry_type for the title */}
+          <DialogTitle>Full Inquiry: **{inquiryType}**</DialogTitle>
           <DialogDescription>
             Review the complete message and update the resolution status.
           </DialogDescription>
@@ -94,6 +103,7 @@ export const InquiryViewDialog: React.FC<InquiryViewDialogProps> = ({
               </a>
             </div>
 
+            {/* Phone is not in the API payload, keep as optional */}
             {inquiry.phone && (
               <div className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
@@ -106,9 +116,11 @@ export const InquiryViewDialog: React.FC<InquiryViewDialogProps> = ({
             <div className="space-y-2 text-sm">
               <p className="flex items-center">
                 <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                **Received:** {new Date(inquiry.receivedAt).toLocaleString()}
+                {/* Use created_at field */}
+                **Received:** {new Date(receivedAt).toLocaleString()}
               </p>
-              <p>Source: **{inquiry.source}**</p>
+              {/* Source is not in the API payload, use fallback/omit */}
+              {inquiry.source && <p>Source: **{inquiry.source}**</p>}
               <p className="text-xs text-muted-foreground">ID: {inquiry.id}</p>
             </div>
 
@@ -135,11 +147,12 @@ export const InquiryViewDialog: React.FC<InquiryViewDialogProps> = ({
 
           {/* --- Column 2 & 3: Message Content --- */}
           <div className="md:col-span-2 space-y-4 border-l pl-6">
-            <h3 className="text-xl font-bold">{inquiry.subject}</h3>
+            <h3 className="text-xl font-bold">{inquiryType}</h3>
             <Label className="text-sm font-medium text-muted-foreground">
               Message
             </Label>
             <div className="p-4 border rounded-lg bg-muted/50 text-base leading-relaxed max-h-[50vh] overflow-y-auto whitespace-pre-wrap">
+              {/* Use message field */}
               {inquiry.message}
             </div>
           </div>
@@ -151,7 +164,8 @@ export const InquiryViewDialog: React.FC<InquiryViewDialogProps> = ({
           </Button>
           <Button
             onClick={handleSaveStatus}
-            disabled={currentStatus === inquiry.status} // Disable if status hasn't changed
+            // Disable if status hasn't changed from the initial/current API value
+            disabled={currentStatus === initialStatus}
           >
             Save Status
           </Button>
